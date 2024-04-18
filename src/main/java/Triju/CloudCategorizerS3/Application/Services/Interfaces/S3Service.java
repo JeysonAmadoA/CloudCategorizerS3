@@ -7,13 +7,13 @@ import java.util.List;
 
 public interface S3Service {
 
-    String uploadFile(MultipartFile file) throws IOException;
+    String uploadFile(MultipartFile file) throws Exception;
 
-    String downloadFile(String fileName) throws IOException;
+    String downloadFile(String fileName) throws Exception;
 
     List<String> listFiles() throws IOException;
 
-    String deleteFile(String fileName) throws IOException;
+    String deleteFile(String fileName) throws Exception;
 
-    String updateFileName(String oldFileName, String newFileName) throws IOException;
+    String updateFileName(String oldFileName, String newFileName) throws Exception;
 }

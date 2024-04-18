@@ -1,6 +1,8 @@
 package Triju.CloudCategorizerS3.Application.Services.Implementation;
 
 import Triju.CloudCategorizerS3.Application.Services.Interfaces.S3Service;
+import Triju.CloudCategorizerS3.Domain.Exceptions.FileNotFoundException;
+import Triju.CloudCategorizerS3.Domain.Exceptions.UnnamedFileException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class S3ServiceImpl implements S3Service {
@@ -30,34 +33,35 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public String uploadFile(MultipartFile file) throws IOException {
+    public String uploadFile(MultipartFile file) throws Exception {
+        Optional<String> fileNameOptional = Optional.ofNullable(file.getOriginalFilename());
+        String fileName = fileNameOptional.orElseThrow(UnnamedFileException::new);
         try {
-            String fileName = file.getOriginalFilename();
-            System.out.println(bucketName);
+            String prefix = getFileExtension(fileName);
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(fileName)
+                    .key(prefix+fileName)
                     .build();
 
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
             return "Archivo cargado";
         } catch (IOException exception) {
-            throw new IOException(exception.getMessage());
+            throw new Exception(exception.getMessage());
         }
     }
 
     @Override
-    public String downloadFile(String fileName) throws IOException {
-        if (!doesObjectExist(fileName)){
-            return "Archivo no existe";
-        }
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileName)
-                .build();
-
-        ResponseInputStream<GetObjectResponse> result = s3Client.getObject(request);
+    public String downloadFile(String fileName) throws Exception {
+        String prefix = getFileExtension(fileName);
+        String fullPathFile = prefix + fileName;
+        doesObjectExist(fullPathFile);
         try(FileOutputStream fileOutput = new FileOutputStream(localPath+fileName)){
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fullPathFile)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> result = s3Client.getObject(request);
             byte[] readBuffer = new byte[1024];
             int readLen;
             while ((readLen = result.read(readBuffer)) > 0){
@@ -91,14 +95,14 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public String deleteFile(String fileName) throws IOException {
-        if (!doesObjectExist(fileName)){
-            return "Archivo no existe";
-        }
+    public String deleteFile(String fileName) throws Exception {
+        String prefix = getFileExtension(fileName);
+        String fullPathFile = prefix + fileName;
+        doesObjectExist(fullPathFile);
         try {
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(fileName)
+                    .key(fullPathFile)
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
@@ -111,7 +115,7 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
-    public String updateFileName(String oldFileName, String newFileName) throws IOException {
+    public String updateFileName(String oldFileName, String newFileName) throws Exception {
         if (!doesObjectExist(oldFileName)){
             return "Archivo no existe";
         }
@@ -131,10 +135,9 @@ public class S3ServiceImpl implements S3Service {
         }
     }
 
-    private boolean doesObjectExist(String objectKey){
+    private boolean doesObjectExist(String objectKey) throws FileNotFoundException {
         try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest
-                    .builder()
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectKey)
                     .build();
@@ -142,11 +145,16 @@ public class S3ServiceImpl implements S3Service {
             s3Client.headObject(headObjectRequest);
             return true;
         } catch (S3Exception exception){
-            if (exception.statusCode() == 404){
-                return false;
-            }
+            throw new FileNotFoundException();
         }
-        return true;
+    }
+
+    private String getFileExtension(String fileName){
+        int extensionIndex = 0;
+        for(int i=0; i<fileName.length(); i++){
+            if (fileName.charAt(i) == '.') extensionIndex = i + 1;
+        }
+        return fileName.substring(extensionIndex) + "/";
     }
 }
 
