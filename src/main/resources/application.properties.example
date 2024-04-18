@@ -1,0 +1,5 @@
+spring.application.name=CloudCategorizerS3
+
+aws.accessKeyId=<AWS-ACCESS-KEY>
+aws.secretKey=<AWS-SECRET-KEY>
+aws.bucketName=<AWS-S3-BUCKET-NAME>
