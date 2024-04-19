@@ -2,9 +2,12 @@ package Triju.CloudCategorizerS3.Infrastructure.Controllers.S3;
 
 import Triju.CloudCategorizerS3.Application.Services.Interfaces.S3Service;
 import Triju.CloudCategorizerS3.Domain.Exceptions.FileNotFoundException;
+import Triju.CloudCategorizerS3.Domain.Exceptions.FolderNotFoundException;
 import Triju.CloudCategorizerS3.Domain.Exceptions.UnnamedFileException;
 import Triju.CloudCategorizerS3.Infrastructure.Controllers.BaseController;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,9 +31,28 @@ public class S3Controller extends BaseController {
     }
 
     @GetMapping("/download/{fileName}")
-    public ResponseEntity<Map<String, Object>> downloadFile(@PathVariable("fileName")String fileName) throws Exception {
-        Map <String, Object> response = getJsonResponse(s3Service.downloadFile(fileName));
-        return ResponseEntity.ok(response);
+    public ResponseEntity<byte[]> downloadFile(@PathVariable("fileName")String fileName) throws Exception {
+        byte[] fileBytes = s3Service.downloadFile(fileName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", fileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(fileBytes);
+    }
+
+    @GetMapping("/download-folder/{folderName}")
+    public ResponseEntity<byte[]> downloadFilesByFolder(@PathVariable("folderName")String folderName) throws Exception {
+        byte[] zipFile = s3Service.downloadFilesByFolder(folderName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", folderName + ".zip");
+        headers.setContentLength(zipFile.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(zipFile);
     }
 
     @GetMapping("/list-files")
@@ -54,6 +76,12 @@ public class S3Controller extends BaseController {
 
     @ExceptionHandler({FileNotFoundException.class})
     public ResponseEntity<Map<String, Object>> handleNotFoundFile(FileNotFoundException exception){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(getJsonResponse(exception, HttpStatus.NOT_FOUND.value()));
+    }
+
+    @ExceptionHandler({FolderNotFoundException.class})
+    public ResponseEntity<Map<String, Object>> handleNotFoundFolder(FolderNotFoundException exception){
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(getJsonResponse(exception, HttpStatus.NOT_FOUND.value()));
     }
