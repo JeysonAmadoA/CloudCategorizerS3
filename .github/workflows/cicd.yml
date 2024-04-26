@@ -20,18 +20,18 @@ jobs:
       - name: Login to DockerHub
         run: echo "${{secrets.DOCKER_PASSWORD}}" | docker login -u "${{secrets.DOCKER_USERNAME}}" --password-stdin
       - name: Build Docker Image
-        run: docker build -t jeysonamado/CloudCategorizerS3 .
+        run: docker build -t jeysonamado/cloud-categorizer-s3 .
       - name: Publish Image to Docker Hub
-        run: docker push jeysonamado/CloudCategorizerS3:latest
+        run: docker push jeysonamado/cloud-categorizer-s3:latest
 
   deploy:
     needs: build
     runs-on: [cloud-categorizer-s3]
     steps:
       - name: Pull Image from DockerHub
-        run: docker pull jeysonamado/CloudCategorizerS3:latest
+        run: docker pull jeysonamado/cloud-categorizer-s3:latest
       - name: Delete old container
         run: run rm -f cloud-categorizerS3-container
       - name: Run Docker container
-        run: docker run -d -p 8080:8080 --name cloud-categorizerS3-container jeysonamado/CloudCategorizerS3
+        run: docker run -d -p 8080:8080 --name cloud-categorizerS3-container jeysonamado/cloud-categorizer-s3
 
