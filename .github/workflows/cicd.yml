@@ -1,0 +1,37 @@
+name: CICD
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Build project
+        run: mvn clean install -DskipTests
+      - name: Login to DockerHub
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p password ${{secrets.DOCKER_PASSWORD}}
+      - name: Build Docker Image
+        run: docker build -t jeysonamado/CloudCategorizerS3 .
+      - name: Publish Image to Docker Hub
+        run: docker push jeysonamado/CloudCategorizerS3:latest
+
+  deploy:
+    needs: build
+    runs-on: [cloud-categorizer-s3]
+    steps:
+      - name: Pull Image from DockerHub
+        run: docker pull jeysonamado/CloudCategorizerS3:latest
+      - name: Delete old container
+        run: run rm -f cloud-categorizerS3-container
+      - name: Run Docker container
+        run: docker run -d -p 8080:8080 --name cloud-categorizerS3-container jeysonamado/CloudCategorizerS3
+
