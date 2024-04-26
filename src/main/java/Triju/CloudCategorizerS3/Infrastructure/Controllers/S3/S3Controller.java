@@ -74,6 +74,13 @@ public class S3Controller extends BaseController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/test")
+    public ResponseEntity<Map<String, Object>> test() {
+        Map <String, Object> response = getJsonResponse("Endpoint Test");
+        return ResponseEntity.ok(response);
+    }
+
+
     @ExceptionHandler({FileNotFoundException.class})
     public ResponseEntity<Map<String, Object>> handleNotFoundFile(FileNotFoundException exception){
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
