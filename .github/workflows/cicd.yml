@@ -31,7 +31,7 @@ jobs:
       - name: Pull Image from DockerHub
         run: docker pull jeysonamado/cloud-categorizer-s3:latest
       - name: Delete old container
-        run: run rm -f cloud-categorizerS3-container
+        run: docker rm -f cloud-categorizerS3-container
       - name: Run Docker container
         run: docker run -d -p 8080:8080 --name cloud-categorizerS3-container jeysonamado/cloud-categorizer-s3
 
