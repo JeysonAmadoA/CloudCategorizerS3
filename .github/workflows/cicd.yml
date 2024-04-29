@@ -16,7 +16,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Decrypt .env file
-        run: openssl aes-256-cbc -d -in .env.enc -out src/main/resources/application.properties -k ${{ secrets.ENCRYPTION_KEY }}
+        run: openssl aes-256-cbc -d -in .env -out src/main/resources/application.properties -k ${{ secrets.ENCRYPTION_KEY }}
       - name: Build project
         run: mvn clean install -DskipTests
       - name: Login to DockerHub
