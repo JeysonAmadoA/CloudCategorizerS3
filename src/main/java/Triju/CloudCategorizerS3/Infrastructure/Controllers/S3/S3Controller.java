@@ -76,7 +76,7 @@ public class S3Controller extends BaseController {
 
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> test() {
-        Map <String, Object> response = getJsonResponse("Endpoint Test");
+        Map <String, Object> response = getJsonResponse("Endpoint Test - Prueba de CI/CD");
         return ResponseEntity.ok(response);
     }
 
